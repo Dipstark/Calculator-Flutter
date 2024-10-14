@@ -42,6 +42,195 @@ To run this project locally, ensure you have Flutter installed. Follow these ste
    flutter run
    ```
 
+   import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:flutter_signature_pad/flutter_signature_pad.dart';
+import 'package:math_expressions/math_expressions.dart';
+
+void main() {
+  runApp(CalculatorApp());
+}
+
+class CalculatorApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Calculator',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: CalculatorHome(),
+    );
+  }
+}
+
+class CalculatorHome extends StatefulWidget {
+  @override
+  _CalculatorHomeState createState() => _CalculatorHomeState();
+}
+
+class _CalculatorHomeState extends State<CalculatorHome> {
+  String display = '';
+  File? _image;
+  final _signatureKey = GlobalKey<SignatureState>();
+
+  void buttonPressed(String value) {
+    setState(() {
+      display += value;
+    });
+  }
+
+  void calculateResult() {
+    try {
+      final expression = Parser().parse(display);
+      final evaluator = const ExpressionEvaluator();
+      final result = evaluator.eval(expression, null);
+      setState(() {
+        display = result.toString();
+      });
+    } catch (e) {
+      setState(() {
+        display = 'Error';
+      });
+    }
+  }
+
+  void clearDisplay() {
+    setState(() {
+      display = '';
+    });
+  }
+
+  Future<void> pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
+
+  void clearSignature() {
+    _signatureKey.currentState?.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Calculator'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.camera),
+            onPressed: pickImage,
+          ),
+          IconButton(
+            icon: Icon(Icons.create),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('Handwriting Input'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Signature(
+                        key: _signatureKey,
+                        height: 300,
+                        width: 300,
+                        backgroundColor: Colors.grey[300]!,
+                      ),
+                      SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: () {
+                          clearSignature();
+                          Navigator.of(context).pop();
+                        },
+                        child: Text('Clear'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          Container(
+            padding: EdgeInsets.all(24),
+            alignment: Alignment.centerRight,
+            child: Text(
+              display,
+              style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              _buildButton('1'),
+              _buildButton('2'),
+              _buildButton('3'),
+              _buildButton('+'),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              _buildButton('4'),
+              _buildButton('5'),
+              _buildButton('6'),
+              _buildButton('-'),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              _buildButton('7'),
+              _buildButton('8'),
+              _buildButton('9'),
+              _buildButton('*'),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              _buildButton('0'),
+              _buildButton('C', isClear: true),
+              _buildButton('=', isEqual: true),
+              _buildButton('/'),
+            ],
+          ),
+          if (_image != null)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Image.file(_image!),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButton(String value, {bool isClear = false, bool isEqual = false}) {
+    return ElevatedButton(
+      onPressed: () {
+        if (isClear) {
+          clearDisplay();
+        } else if (isEqual) {
+          calculateResult();
+        } else {
+          buttonPressed(value);
+        }
+      },
+      child: Text(value, style: TextStyle(fontSize: 24)),
+    );
+  }
+}
+
+
 
 ## Output
 
